@@ -1,0 +1,8 @@
+org.apache.commons.collections4.Bag
+org.apache.commons.collections4.BagUtils
+org.apache.commons.collections4.BenchmarkedClass
+org.apache.commons.collections4.BidiMap
+org.apache.commons.collections4.BoundedCollection
+org.apache.commons.collections4.BoundedMap
+org.apache.commons.collections4.SetValuedMap
+org.apache.commons.collections4.Transformer

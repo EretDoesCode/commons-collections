@@ -23,7 +23,7 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>commons-collections4</artifactId>
-  <version>4.5-SNAPSHOT</version>
+  <version>M-SNAPSHOT</version>
   <name>Apache Commons Collections</name>
 
   <inceptionYear>2001</inceptionYear>
@@ -464,6 +464,35 @@
   </contributors>
 
   <dependencies>
+   <!-- <dependency>
+      <groupId>jdk.tools</groupId>
+      <artifactId>jdk.tools</artifactId>
+      <version>1.6</version>
+      <scope>system</scope>
+      <systemPath>${java.home}/lib/tools.jar</systemPath>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.13.2</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.evosuite</groupId>
+      <artifactId>evosuite-standalone-runtime</artifactId>
+      <version>${evosuiteVersion}</version>
+      <scope>test</scope>
+    </dependency>-->
+    <dependency>
+      <groupId>org.openjdk.jmh</groupId>
+      <artifactId>jmh-core</artifactId>
+      <version>1.35</version>
+    </dependency>
+    <dependency>
+      <groupId>org.openjdk.jmh</groupId>
+      <artifactId>jmh-generator-annprocess</artifactId>
+      <version>1.35</version>
+    </dependency>
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-api</artifactId>
@@ -526,6 +555,9 @@
   </distributionManagement>
 
   <properties>
+    <evosuiteVersion>1.0.6</evosuiteVersion>
+    <RANDOOP_JAR>randoop-4.3.2/randoop-all-4.3.2.jar</RANDOOP_JAR>
+
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <maven.compiler.source>1.8</maven.compiler.source>
@@ -588,25 +620,106 @@
 
   </properties>
 
+  <repositories>
+    <repository>
+      <id>jitpack.io</id>
+      <url>https://jitpack.io</url>
+    </repository>
+  </repositories>
+
   <build>
     <defaultGoal>clean verify apache-rat:check pmd:check checkstyle:check japicmp:cmp javadoc:javadoc</defaultGoal>
     <pluginManagement>
       <plugins>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-pmd-plugin</artifactId>
-          <version>${commons.pmd.version}</version>
-          <configuration>
-            <targetJdk>${maven.compiler.target}</targetJdk>
-          </configuration>
-        </plugin>
+        <!--<plugin>
+          <groupId>org.evosuite.plugins</groupId>
+          <artifactId>evosuite-maven-plugin</artifactId>
+          <version>${evosuiteVersion}</version>
+          <executions><execution>
+            <goals> <goal> prepare </goal> </goals>
+            <phase> process-test-classes </phase>
+          </execution></executions>
+        </plugin>-->
       </plugins>
     </pluginManagement>
     <plugins>
+      <!--<plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>build-helper-maven-plugin</artifactId>
+          <version>3.4.0</version>
+          <executions>
+              <execution>
+                  <id>add-test-source</id>
+                  <phase>generate-test-sources</phase>
+                  <goals>
+                      <goal>add-test-source</goal>
+                  </goals>
+                  <configuration>
+                      <sources>
+                          <source>.evosuite/evosuite-tests</source>
+                      </sources>
+                  </configuration>
+              </execution>
+          </executions>
+      </plugin>-->
+      <plugin>
+        <groupId>com.github.spotbugs</groupId>
+        <artifactId>spotbugs-maven-plugin</artifactId>
+        <version>4.7.3.5</version>
+        <configuration>
+          <includeFilterFile>spotbugs-security-include.xml</includeFilterFile>
+          <excludeFilterFile>spotbugs-security-exclude.xml</excludeFilterFile>
+          <plugins>
+            <plugin>
+              <groupId>com.h3xstream.findsecbugs</groupId>
+              <artifactId>findsecbugs-plugin</artifactId>
+              <version>1.12.0</version>
+            </plugin>
+          </plugins>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-pmd-plugin</artifactId>
+        <version>${commons.pmd.version}</version>
+        <configuration>
+          <targetJdk>${maven.compiler.target}</targetJdk>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.pitest</groupId>
+        <artifactId>pitest-maven</artifactId>
+        <version>1.14.2</version><!-- No Problems Here, causes no problems with mvn clean install. Intellij doesn't see the plugin version but it exists -->
+      </plugin>
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <version>0.8.9</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>prepare-agent</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>report</id>
+            <phase>test</phase>
+            <goals>
+              <goal>report</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
           <configuration>
+            <properties>
+              <property>
+                <name>listener</name>
+                <value>org.evosuite.runtime.InitializingListener</value>
+              </property>
+            </properties>
             <includes>
               <include>**/*Test.java</include>
             </includes>
@@ -636,6 +749,14 @@
             <exclude>.asf.yaml</exclude>
             <exclude>site-content/**/*</exclude>
             <exclude>src/test/resources/org/apache/commons/collections4/data/test/*</exclude>
+            <exclude>src/main/java/org/apache/commons/collections4/Main.java</exclude>
+            <exclude>Dockerfile</exclude>
+            <exclude>src/main/java/org/apache/commons/collections4/BenchmarkedClass.java</exclude>
+            <exclude>RegressionTest.java</exclude>
+            <exclude>RegressionTest0.java</exclude>
+            <exclude>spotbugs-security-include.xml</exclude>
+            <exclude>spotbugs-security-exclude.xml</exclude>
+            <exclude>ClassesForRandoop.txt</exclude>
           </excludes>
         </configuration>
       </plugin>
@@ -672,6 +793,9 @@
         <!-- Temporary fix for COLLECTIONS-658, remove this after this has implemented in parent pom -->
         <configuration>
           <archive combine.children="append">
+            <manifest>
+              <mainClass>org.apache.commons.collections4.Main</mainClass>
+            </manifest>
             <manifestEntries>
               <Automatic-Module-Name>org.apache.commons.collections4</Automatic-Module-Name>
             </manifestEntries>
@@ -742,6 +866,14 @@
             <exclude>.asf.yaml</exclude>
             <exclude>site-content/**/*</exclude>
             <exclude>src/test/resources/org/apache/commons/collections4/data/test/*</exclude>
+            <exclude>src/main/java/org/apache/commons/collections4/Main.java</exclude>
+            <exclude>Dockerfile</exclude>
+            <exclude>src/main/java/org/apache/commons/collections4/BenchmarkedClass.java</exclude>
+            <exclude>RegressionTest.java</exclude>
+            <exclude>RegressionTest0.java</exclude>
+            <exclude>spotbugs-security-include.xml</exclude>
+            <exclude>spotbugs-security-exclude.xml</exclude>
+            <exclude>ClassesForRandoop.txt</exclude>
           </excludes>
         </configuration>
       </plugin>
